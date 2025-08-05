@@ -21,12 +21,16 @@ const userSchema=new Schema(
             lowercase:true,
             trim:true,
           },
-          fullname:{
+          fullName:{
             type:String,
             required:true
           },
           coverimage:{
             type:String
+          },
+          avatar:{
+            type:String,
+            required:true
           },
           watchHistory:[
             {
