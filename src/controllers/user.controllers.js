@@ -70,4 +70,69 @@ const registeruser = asyncHandler(async (req, res) => {
   );
 });
 
-export { registeruser };
+const generateAccessTokenandrefreshtokens= async(userid)=>{
+            try{
+                const user=await User.findById(userid)
+                const accesstoken=user.generateAccessToken()
+                const refreshtoken=user.generateRefreshToken()
+
+                user.refreshtoken=refreshtoken
+                user.save({validiteBeforeSave:false})
+
+            }
+            catch(error){
+               throw new ApiError(400,"unable to generate tokens")
+            }
+                     return {accesstoken,refreshtoken}
+}
+
+const loginuser=asyncHandler(async(req,res)=>{
+  const {email,username,password}=req.body;
+
+   if(!username || !email){
+    throw new ApiError(100,"username or password is required")
+   }
+    
+   const user=User.findOne({
+    $or:[{username},{email}]
+   })
+
+   if(!user){
+    throw new ApiError(200,"cant find person with this emailand username")
+   }
+
+    const truepass=await user.isPasswordCorrect(password)
+    if(!truepass){
+      throw new ApiError(300,"passwprd incorrext")
+    }
+  const {accesstoken , refreshtoken}= await generateAccessTokenandrefreshtokens(user._id)
+       const finaluser=User.findById(user._id).select("-password -refreshtoken")
+
+       const options={
+        httpOnly:true,
+        secure:true
+       }
+
+       return res
+       .status(200)
+       .cookie("refrehtoken",refreshtoken,options)
+       .cookie("accesstoken",accesstoken,options)
+       .json(
+        new ApiResponse(200,
+          {
+            user:finaluser,refreshtoken,accesstoken
+          },
+          "user logged successfully"
+        ))
+       
+})
+const logoutuser=asyncHandler(async(req,res)=>{
+
+  const yes= req.user._id
+
+})
+
+export { registeruser,
+  loginuser,
+  logoutuser
+ };
